@@ -659,7 +659,7 @@ end
 function negativebinomialparameters(rbm::NegativeBinomialBernoulliRBM)
    nbmean,successprobability = mu(rbm),successprob(rbm)
    tmp = hcat(nbmean,successprobability)
-   estimtatedparameters = DataFrames.DataFrame(tmp)
+   estimtatedparameters = DataFrame(tmp)
    rename!(estimtatedparameters, :x1 => :Mu, :x2 => :SuccessProb)
    estimtatedparameters
 end
@@ -667,7 +667,7 @@ end
 function negativebinomialparameters(dbm::MultimodalDBM)
    nbmean,successprobability = mu(dbm),successprob(dbm)
    tmp = hcat(nbmean,successprobability)
-   estimtatedparameters = DataFrames.DataFrame(tmp)
+   estimtatedparameters = DataFrame(tmp)
    rename!(estimtatedparameters, :x1 => :Mu, :x2 => :SuccessProb)
    estimtatedparameters
 end
