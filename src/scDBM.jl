@@ -1,4 +1,4 @@
-module BoltzmannMachines
+module scDBM
 
 using Distributions
 using Distributed
@@ -14,7 +14,6 @@ using Gadfly
 using Loess
 using Distances
 
-const BMs = BoltzmannMachines
 
 export
    AbstractBM,
