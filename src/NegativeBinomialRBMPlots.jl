@@ -306,7 +306,7 @@ function compare_pca(pca_original::Array{Float64,2}, pca_dbm::Array{Float64,2}, 
       Guide.ylabel("PC 2"))
 end
 
-function meandispersionplot(x::Array{Float64,2}, rbm::BMs.NegativeBinomialBernoulliRBM; libsizenormalization::Bool)
+function meandispersionplot(x::Array{Float64,2}, rbm::NegativeBinomialBernoulliRBM; libsizenormalization::Bool)
 
    dispersion = 1 ./ rbm.inversedispersion
    if libsizenormalization
@@ -365,14 +365,14 @@ function genewise_varplot(x::Array{Float64,2}, particles::Array{Array{Float64,2}
 end
 
 # https://hbctraining.github.io/DGE_workshop/lessons/04_DGE_DESeq2_analysis.html
-function coefficientofvariation(particles::Array{Array{Float64,2},1}, rbm::BMs.NegativeBinomialBernoulliRBM)
-   tmp = DataFrame(mapslices(std,particles[1],dims=1)' ./ BMs.mu(rbm))
+function coefficientofvariation(particles::Array{Array{Float64,2},1}, rbm::NegativeBinomialBernoulliRBM)
+   tmp = DataFrame(mapslices(std,particles[1],dims=1)' ./ mu(rbm))
    rename!(tmp, :x1 => :CV)
    tmp
 end
 
-function biologicalcoefficientofvariation(particles::Array{Array{Float64,2},1}, rbm::BMs.NegativeBinomialBernoulliRBM)
-   tmp = DataFrame(mapslices(std,particles[1],dims=1)' ./ BMs.mu(rbm))
+function biologicalcoefficientofvariation(particles::Array{Array{Float64,2},1}, rbm::NegativeBinomialBernoulliRBM)
+   tmp = DataFrame(mapslices(std,particles[1],dims=1)' ./ mu(rbm))
    rename!(tmp, :x1 => :CV)
    tmp
 end

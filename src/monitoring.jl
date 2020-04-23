@@ -81,9 +81,9 @@ the Monitor `monitor`.
 function monitorexactloglikelihood!(monitor::Monitor, bm::AbstractBM,
       epoch::Int, datadict::DataDict)
 
-   logz = BMs.exactlogpartitionfunction(bm)
+   logz = exactlogpartitionfunction(bm)
    for (datasetname, x) in datadict
-      push!(monitor, MonitoringItem(BMs.monitorexactloglikelihood, epoch,
+      push!(monitor, MonitoringItem(monitorexactloglikelihood, epoch,
             exactloglikelihood(bm, x, logz), datasetname))
    end
 
@@ -100,7 +100,7 @@ function monitorfreeenergy!(monitor::Monitor, rbm::AbstractRBM,
       epoch::Int, datadict::DataDict)
 
    for (datasetname, x) in datadict
-      push!(monitor, MonitoringItem(BMs.monitorfreeenergy, epoch,
+      push!(monitor, MonitoringItem(monitorfreeenergy, epoch,
             freeenergy(rbm, x), datasetname))
    end
 
@@ -132,27 +132,27 @@ function monitorloglikelihood!(monitor::Monitor, rbm::AbstractRBM,
       burnin::Int = 5)
 
    if parallelized
-      logimpweights = BMs.batchparallelized(
-            n -> BMs.aislogimpweights(rbm;
+      logimpweights = batchparallelized(
+            n -> aislogimpweights(rbm;
                   ntemperatures = ntemperatures, temperatures = temperatures,
                   nparticles = n, burnin = burnin),
             nparticles, vcat)
    else
-      logimpweights = BMs.aislogimpweights(rbm;
+      logimpweights = aislogimpweights(rbm;
             ntemperatures = ntemperatures, temperatures = temperatures,
             nparticles = nparticles, burnin = burnin)
    end
 
    logr = logmeanexp(logimpweights)
-   sd = BMs.aisstandarddeviation(logimpweights)
-   logz = BMs.logpartitionfunction(rbm, logr)
+   sd = aisstandarddeviation(logimpweights)
+   logz = logpartitionfunction(rbm, logr)
    for (datasetname, x) in datadict
-      push!(monitor, MonitoringItem(BMs.monitorloglikelihood, epoch,
-            BMs.loglikelihood(rbm, x, logz), datasetname))
+      push!(monitor, MonitoringItem(monitorloglikelihood, epoch,
+            loglikelihood(rbm, x, logz), datasetname))
    end
    push!(monitor,
-         MonitoringItem(BMs.monitoraisstandarddeviation, epoch, sd, ""),
-         MonitoringItem(BMs.monitoraislogr, epoch, logr, ""))
+         MonitoringItem(monitoraisstandarddeviation, epoch, sd, ""),
+         MonitoringItem(monitoraislogr, epoch, logr, ""))
 
    monitor
 end

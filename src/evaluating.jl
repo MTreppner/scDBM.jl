@@ -67,23 +67,23 @@ function aislogimpweights(rbm1::R, rbm2::R;
 
    logimpweights = zeros(nparticles)
 
-   vv = BMs.sampleparticles(rbm1, nparticles, initburnin)[1]
+   vv = sampleparticles(rbm1, nparticles, initburnin)[1]
    nhidden1 = length(rbm1.hidbias)
    nhidden2 = length(rbm2.hidbias)
    hh = Matrix{Float64}(undef, nparticles, nhidden1 + nhidden2)
 
-   prevmixedrbm = BMs.mixedrbm(rbm1, rbm2, temperatures[1])
+   prevmixedrbm = mixedrbm(rbm1, rbm2, temperatures[1])
 
    for k = 2:length(temperatures)
-      curmixedrbm = BMs.mixedrbm(rbm1, rbm2, temperatures[k])
+      curmixedrbm = mixedrbm(rbm1, rbm2, temperatures[k])
 
       # log(p*(x)) = -freeenergy(x)
-      logimpweights .+= BMs.freeenergydiffs(prevmixedrbm, curmixedrbm, vv)
+      logimpweights .+= freeenergydiffs(prevmixedrbm, curmixedrbm, vv)
 
       # Gibbs transition for the (visible) nodes
       for burn = 1:burnin
-         BMs.samplehidden!(hh, curmixedrbm, vv)
-         BMs.samplevisible!(vv, curmixedrbm, hh)
+         samplehidden!(hh, curmixedrbm, vv)
+         samplevisible!(vv, curmixedrbm, hh)
       end
 
       prevmixedrbm = curmixedrbm
@@ -491,7 +491,7 @@ The log of the partition function is computed exactly by
 Besides that, the function simply calls `loglikelihood(rbm, x)`.
 """
 function exactloglikelihood(rbm::AbstractRBM, x::Matrix{Float64},
-      logz = BMs.exactlogpartitionfunction(rbm))
+      logz = exactlogpartitionfunction(rbm))
    loglikelihood(rbm, x, logz)
 end
 
@@ -510,7 +510,7 @@ function exactloglikelihood(mdbm::MultimodalDBM, x::Matrix{Float64},
    nsamples = size(x, 1)
    hiddbm::PartitionedBernoulliDBM =
          converttopartitionedbernoullidbm(mdbm[2:end])
-   combinedbiases = BMs.combinedbiases(hiddbm)
+   combinedbiases = combinedbiases(hiddbm)
 
    # combinations of hidden layers with odd index (i. e. h1, h3, ...)
    hodd = initcombinationoddlayersonly(hiddbm)
@@ -631,7 +631,7 @@ with the minimum of
 number of nodes in layers with odd index).
 """
 function exactlogpartitionfunction(dbm::PartitionedBernoulliDBM)
-   nunits = BMs.nunits(dbm)
+   nunits = nunits(dbm)
    nhiddenlayers = length(dbm)
 
    # Apply algorithm on reversed DBM if it requires fewer iterations there
@@ -724,7 +724,7 @@ function freeenergy(rbm::AbstractRBM, x::Matrix{Float64})
    freeenergy = 0.0
    for j = 1:nsamples
       v = vec(x[j, :])
-      freeenergy += BMs.freeenergy(rbm, v)
+      freeenergy += freeenergy(rbm, v)
    end
    freeenergy /= nsamples
    freeenergy
@@ -820,7 +820,7 @@ end
 Returns particle for DBM, initialized with zeros.
 "
 function initcombination(dbm::BasicDBM)
-   nunits = BMs.nunits(dbm)
+   nunits = nunits(dbm)
    nlayers = length(nunits)
    u = Particle(undef, nlayers)
    for i = 1:nlayers
@@ -835,7 +835,7 @@ Creates and zero-initializes a particle for layers with odd indexes
 in the `dbm`.
 """
 function initcombinationoddlayersonly(dbm::MultimodalDBM)
-   nunits = BMs.nunits(dbm)
+   nunits = nunits(dbm)
    nlayers = length(nunits)
    uodd = Particle(undef, round(Int, nlayers/2, RoundUp))
    for i = eachindex(uodd)
@@ -927,7 +927,7 @@ function loglikelihooddiff(rbm1::R, rbm2::R,
       logimpweights::Array{Float64,1} = aislogimpweights(rbm1, rbm2)
       ) where {R<:AbstractRBM}
 
-   loglikelihooddiff(rbm1, rbm2, x, BMs.logmeanexp(logimpweights))
+   loglikelihooddiff(rbm1, rbm2, x, logmeanexp(logimpweights))
 end
 
 
@@ -977,13 +977,13 @@ function logpartitionfunction(bm::AbstractBM;
       burnin::Int = 5)
 
    if parallelized
-      logimpweights = BMs.batchparallelized(
-            n -> BMs.aislogimpweights(bm;
+      logimpweights = batchparallelized(
+            n -> aislogimpweights(bm;
                   ntemperatures = ntemperatures, temperatures = temperatures,
                   nparticles = n, burnin = burnin),
             nparticles, vcat)
    else
-      logimpweights = BMs.aislogimpweights(bm;
+      logimpweights = aislogimpweights(bm;
             ntemperatures = ntemperatures, temperatures = temperatures,
             nparticles = nparticles, burnin = burnin)
    end
@@ -1247,7 +1247,7 @@ end
 Returns the number of parameters in the Boltzmann Machine model `bm`.
 """
 function nmodelparameters(bm::AbstractBM)
-   nunits = BMs.nunits(bm)
+   nunits = nunits(bm)
    nweights = 0
    for i = 1:(length(nunits) - 1)
       nweights += nunits[i] * nunits[i+1]
@@ -1510,7 +1510,7 @@ Computes the unnormalized probability of the nodes in layers with odd indexes,
 i. e. p*(v, h2, h4, ...).
 "
 function unnormalizedproboddlayers(dbm::PartitionedBernoulliDBM, uodd::Particle,
-      combinedbiases = BMs.combinedbiases(dbm))
+      combinedbiases = combinedbiases(dbm))
 
    nlayers = length(dbm) + 1
    nintermediatelayerstobesummedout = div(nlayers - 1, 2)
@@ -1658,7 +1658,7 @@ Calculates the Akaike information criterion for a Boltzmann Machine, given its
 `loglikelihood`.
 """
 function akaikeinformationcriterion(bm::AbstractBM, loglikelihood::Float64)
-   2*BMs.nmodelparameters(bm) - 2*loglikelihood
+   2*nmodelparameters(bm) - 2*loglikelihood
 end
 
 
@@ -1668,7 +1668,7 @@ Calculates the Akaike information criterion for a Boltzmann machine, given its
 `loglikelihood` and the number of samples `nsamples`.
 """
 function bayesianinformationcriterion(bm::AbstractBM, nsamples::Int, loglikelihood::Float64)
-   -2*loglikelihood + BMs.nmodelparameters(bm)*log(nsamples)
+   -2*loglikelihood + nmodelparameters(bm)*log(nsamples)
 end
 
 

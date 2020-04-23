@@ -93,14 +93,14 @@ Usage example:
 function crossvalidationargs(x::Matrix{Float64}, pars ...; kfold::Int = 10)
 
    nsamples = size(x, 1)
-   batchranges = BMs.ranges(BMs.mostevenbatches(nsamples, kfold))
+   batchranges = ranges(mostevenbatches(nsamples, kfold))
 
-   args_data = Vector{Tuple{Matrix{Float64}, BMs.DataDict}}(undef, kfold)
+   args_data = Vector{Tuple{Matrix{Float64}, DataDict}}(undef, kfold)
    for i in eachindex(batchranges)
       rng = batchranges[i]
       trainingdata = x[[!(j in rng) for j in 1:nsamples], :]
       evaluationdata = x[rng, :]
-      datadict = BMs.DataDict(string(i) => evaluationdata)
+      datadict = DataDict(string(i) => evaluationdata)
       args_data[i] = (trainingdata, datadict)
    end
 

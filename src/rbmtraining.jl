@@ -189,7 +189,7 @@ function fitrbm(x::Matrix{Float64};
             
             for j in 1:size(x,1)
                for i in 1:size(x,2)
-                  genewisedispersion[j,i] = BMs.mle_for_θ([x[j,i]], [estimatedmean[j,i]], wts, rbm, lambda; maxIter=20)
+                  genewisedispersion[j,i] = mle_for_θ([x[j,i]], [estimatedmean[j,i]], wts, rbm, lambda; maxIter=20)
                end
             end
 
