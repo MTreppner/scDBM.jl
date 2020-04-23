@@ -1,0 +1,6 @@
+authors = ["treppner@imbi.uni-freiburg.de"]
+name = "scDBM"
+uuid = "296822c1-03b8-506d-b9f7-52a999f9dd6a"
+version = "0.1.0"
+
+[deps]
