@@ -2,17 +2,17 @@
 Contains all plotting functions for displaying information collected
 in module `BoltzmannMachines`. Most important function is `plotevaluation`.
 "
-module BoltzmannMachinesPlots
+#module BoltzmannMachinesPlots
 
-import scDBM
+#import scDBM
 
-using Compose
-using DataFrames
-using Gadfly
-using Statistics
+#using Compose
+#using DataFrames
+#using Gadfly
+#using Statistics
 
 
-export plotevaluation, crossvalidationcurve, scatterhidden
+#export plotevaluation, crossvalidationcurve, scatterhidden
 
 
 function checkdata(plotdata)
