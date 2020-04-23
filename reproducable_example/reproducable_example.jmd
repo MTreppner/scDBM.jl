@@ -1,0 +1,196 @@
+---
+title: Generating Synthetic Single-Cell RNA-Sequencing Data from Small Pilot Studies using Deep Learning
+author: Martin Treppner
+date: 2020-04-22
+---
+
+# Load required packages  
+
+```julia; out_width="15cm"; eval=true
+using HTTP, CSV, DataFrames, Random, Distances, UMAP, Clustering, Gadfly, DelimitedFiles, MultivariateStats
+
+push!(LOAD_PATH, "C:/Users/treppner/Dropbox/PhD/BoltzmannMachines.jl-1/src")
+import BoltzmannMachines
+push!(LOAD_PATH, "C:/Users/treppner/Dropbox/PhD/BoltzmannMachinesPlots.jl/src")
+import BoltzmannMachinesPlots
+BMs = BoltzmannMachines
+
+set_default_plot_size(50cm, 20cm)
+```
+# Download example dataset  
+
+The data consists of 3k PBMCs from a Healthy Donor and is freely available from 10x Genomics. On a unix system, you can uncomment and run the following to download and unpack the data
+
+```julia; out_width="15cm"; eval=false
+#mkdir data
+#wget http://cf.10xgenomics.com/samples/cell-exp/1.1.0/pbmc3k/pbmc3k_filtered_gene_bc_matrices.tar.gz -O data/pbmc3k_filtered_gene_bc_matrices.tar.gz
+#cd data; tar -xzf pbmc3k_filtered_gene_bc_matrices.tar.gz
+```
+
+# Read dataset  
+
+```julia; out_width="15cm"; eval=true
+countmatrix = DataFrame(readdlm("C:/Users/treppner/Dropbox/PhD/NB-DBM-Paper/manuscript/data/filtered_gene_bc_matrices/hg19/matrix.mtx"))[4:end,1:3];
+countmatrix = unstack(countmatrix, :x2, :x1, :x3);
+countmatrix = DataFrame(replace!(convert(Matrix, countmatrix), missing=>0))[:,2:end];
+names!(countmatrix, Symbol.(:Gene, 1:size(countmatrix,2)));
+countmatrix = Array{Float64,2}(countmatrix);
+```
+
+# Read gene names
+```julia; out_width="15cm"; eval=false
+#gene_names = DataFrame(readdlm("C:/Users/treppner/Dropbox/PhD/NB-DBM-Paper/manuscript/data/filtered_gene_bc_matrices/hg19/genes.tsv"))[:,2]
+#unique(map(arg -> SubString(gene_names[arg],1 ,length(gene_names[arg])-1), 1:size(gene_names,1)))
+#make_unique = map(arg -> gene_names[arg][1:findfirst(".", gene_names[arg]).stop-1], 1:size(gene_names,1))
+#tmp = unique(map(arg -> if occursin(".", gene_names[arg])==true gene_names[arg] = gene_names[arg][1:findfirst(".", gene_names[arg]).stop-1] else gene_names[arg] = gene_names[arg] end, 1:size(gene_names,1)))
+```
+
+# Remove low quality genes
+
+Crude reduction of data set size for computational purposes.
+```julia; out_width="15cm"; eval=true
+countmatrix = countmatrix[:,(mapslices(sum, countmatrix, dims=1) .> 500.0)[:]];
+```
+
+```julia; out_width="15cm"; eval=true
+#countmatrix = CSV.read("C:/Users/treppner/Dropbox/PhD/scRNA-seq/PBMC/PBMC_HVG.csv");
+#countmatrix = Array{Float64,2}(Array{Float64,2}(countmatrix[:,2:end])');
+
+# Sample pilot dataset
+Random.seed!(111);
+cells = 1000;
+random_cells = rand(1:size(countmatrix,1),cells);
+pilot_data = countmatrix[random_cells,:];
+```
+
+# Fit scDBM
+
+Set up train and test set.
+```julia; out_width="15cm"; eval=true
+Random.seed!(101);
+data, datatest = BMs.splitdata(pilot_data, 0.3);
+datadict = BMs.DataDict("Training data" => data, "Test data" => datatest);
+```
+
+Set initial parameters.
+The learning rate has to be set relatively small, because the reconstruction can get
+very large for high expression values. Hence, the corresponding weights will get a very
+big learning signal.
+
+```julia; out_width="15cm"; eval=true
+epochs = 750;                                                        # Train for 5000 epochs
+init_disp = (ones(size(data,2)) .* 1.0);                             # Set inverse dispersion parameter
+lr = [0.000001*ones(3500);0.00005*ones(1000);0.00001*ones(10000)];   # Set learning rate
+regularization = 220.0;                                              # Set regularization parameter (lambda)
+```
+
+Train scDBM.
+```julia; out_width="15cm"; eval=true
+monitor = BMs.Monitor(); monitor1 = BMs.Monitor(); monitor2 = BMs.Monitor();
+Random.seed!(59);
+dbm = BMs.fitdbm(data, epochs = 200, learningrate = 0.0001, batchsizepretraining = 32, 
+      monitoringdatapretraining = datadict,
+      pretraining = [
+            # Negative-Binomial RBM
+            BMs.TrainLayer(nhidden = 12,
+            learningrates = lr, 
+            epochs = epochs,
+            rbmtype = BMs.NegativeBinomialBernoulliRBM, 
+            inversedispersion = init_disp,
+            fisherscoring = 1,
+            lambda = regularization,
+               monitoring = (rbm, epoch, datadict) -> begin if epoch % 20 == 0 BMs.monitorreconstructionerror!(monitor1, rbm, epoch, datadict) end end);
+            # Bernoulli RBM
+            BMs.TrainLayer(nhidden = 4, 
+            learningrate = 0.0001,
+            epochs = 500,
+               monitoring = (rbm, epoch, datadict) -> begin if epoch % 20 == 0 BMs.monitorreconstructionerror!(monitor2, rbm, epoch, datadict) end end)
+            ];
+monitoring = (dbm, epoch) -> begin 
+                              if epoch % 5 == 0 
+                                 BMs.monitorlogproblowerbound!(monitor, dbm, epoch, datadict)
+                              end
+                           end);
+hstack(
+   BoltzmannMachinesPlots.plotevaluation(monitor1, BMs.monitorreconstructionerror),
+   BoltzmannMachinesPlots.plotevaluation(monitor2, BMs.monitorreconstructionerror),
+   BoltzmannMachinesPlots.plotevaluation(monitor, BMs.monitorlogproblowerbound)
+)   
+```
+
+Generate synthetic samples.
+```julia; out_width="15cm"; eval=true
+number_gensamples = size(pilot_data,1);
+synthetic_cells = BMs.initparticles(dbm, number_gensamples);
+BMs.gibbssamplenegativebinomial!(pilot_data,synthetic_cells, dbm, 30);
+```
+
+# Plotting gene distributions    
+
+```julia; out_width="15cm"; eval=true
+# Select genes
+genes = [:Gene200, :Gene201, :Gene202];
+
+# Transform pilot data
+plot_pilot_data = DataFrame(pilot_data);
+names!(plot_pilot_data, Symbol.(:Gene, 1:size(plot_pilot_data,2)));
+plot_pilot_data = DataFrames.stack(plot_pilot_data[genes]);
+plot_pilot_data[:model] = "Pilot Data";
+plot_pilot_data[:log_value] = log10.(plot_pilot_data[:value] .+ 1);
+
+# Transform scDBM data
+plot_data_scDBM = DataFrame(synthetic_cells[1]);
+names!(plot_data_scDBM, Symbol.(:Gene, 1:size(plot_data_scDBM,2)));
+plot_data_scDBM = DataFrames.stack(plot_data_scDBM[genes]);
+plot_data_scDBM[:model] = "scDBM Data";
+plot_data_scDBM[:log_value] = log10.(plot_data_scDBM[:value] .+ 1);
+
+# Combine data
+plot_data = vcat(plot_pilot_data, plot_data_scDBM);
+
+# Violin plot for each gene
+p1 = Gadfly.plot(plot_data, ygroup="model", x="variable", y="log_value", 
+   Guide.title(""),
+   Geom.subplot_grid(Geom.violin),
+   Guide.xlabel(""),
+   Guide.ylabel(""),
+   Theme(major_label_font_size=25pt, minor_label_font_size=20pt)
+)
+```
+
+# Dimensionality reduction, clustering, and Davies-Bouldin index  
+
+```julia; out_width="15cm"; eval=true
+# PCA and k-means clustering for pilot data
+pca_pilot_data = fit(PCA, pilot_data; maxoutdim=10);
+counts_clust_original = kmeans(pca_pilot_data.proj', 10);
+orig_labels = counts_clust_original.assignments;
+pca_original_plot = DataFrame(hcat(pca_pilot_data.proj[:,1],pca_pilot_data.proj[:,2], string.(orig_labels)));
+x = ["PC 1", "PC 2", "Cluster"];
+names!(pca_original_plot, Symbol.(x));
+
+# Map cells using Euclidean distance
+maplab(x1,x2,y) = map(arg -> y[findmin(sum((x1 .- x2[arg:arg,:]).^2,dims=2))[2][1]],1:size(x2,1));
+scDBM_labels = maplab(pilot_data,synthetic_cells[1],orig_labels);
+
+# PCA and k-means clustering for scDBM data
+pca_scDBM_data = fit(PCA, synthetic_cells[1]; maxoutdim=10);
+pca_scDBM_plot = DataFrame(hcat(pca_scDBM_data.proj[:,1],pca_scDBM_data.proj[:,2], string.(scDBM_labels)));
+names!(pca_scDBM_plot, Symbol.(x));
+
+orig_dbindex = BMs.DBindex(pilot_data, orig_labels)
+dbm_dbindex = BMs.DBindex(synthetic_cells[1], scDBM_labels)
+```
+# Plotting results  
+
+```julia; out_width="15cm"; eval=true
+plot_data = vcat(hcat(pca_original_plot,repeat(["Original"], size(pca_original_plot,1))),hcat(pca_scDBM_plot, repeat(["scDBM"], size(pca_scDBM_plot,1))));
+rename!(plot_data, :x1 => :model);
+
+p2 = Gadfly.plot(plot_data, xgroup = "model", x = "PC 1", y = "PC 2", color=:Cluster,
+   Guide.title("PCA Plot"),
+   Geom.subplot_grid(layer(Geom.point)),
+   Guide.xlabel("PC 1"),
+   Guide.ylabel("PC 2"),
+   Theme(major_label_font_size=25pt, minor_label_font_size=20pt))
+```
