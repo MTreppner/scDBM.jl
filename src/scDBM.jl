@@ -76,7 +76,7 @@ include("monitoring.jl")
 include("beam.jl")
 include("misc.jl")
 include("NegativeBinomialRBMPlots.jl")
-include("BoltzmannMachinesPlots")
+include("BoltzmannMachinesPlots.jl")
 
 
 end # of module scDBM
