@@ -44,7 +44,7 @@ export
          AbstractTrainLayer, AbstractTrainLayers,
          TrainLayer, TrainPartitionedLayer,
          addlayer!, stackrbms,
-         initparticles, gibbssample!,
+         initparticles, gibbssample!,gibbssamplenegativebinomial!,
          meanfield, fitdbm, traindbm!,
    Particle, Particles,
    AbstractOptimizer,
