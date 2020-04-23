@@ -7,13 +7,11 @@ date: 2020-04-22
 # Load required packages  
 
 ```julia; out_width="15cm"; eval=true
-using HTTP, CSV, DataFrames, Random, Distances, UMAP, Clustering, Gadfly, DelimitedFiles, MultivariateStats
+using Pkg, HTTP, CSV, DataFrames, Random, Distances, UMAP, Clustering, Gadfly, DelimitedFiles, MultivariateStats, Serialization
 
-push!(LOAD_PATH, "C:/Users/treppner/Dropbox/PhD/BoltzmannMachines.jl-1/src")
-import BoltzmannMachines
-push!(LOAD_PATH, "C:/Users/treppner/Dropbox/PhD/BoltzmannMachinesPlots.jl/src")
-import BoltzmannMachinesPlots
-BMs = BoltzmannMachines
+# Load single-cell deep Boltzmann machine (scDBM) 
+Pkg.add(PackageSpec(url="https://github.com/MTreppner/scDBM.jl", rev="master"))
+using scDBM
 
 set_default_plot_size(50cm, 20cm)
 ```
@@ -53,9 +51,6 @@ countmatrix = countmatrix[:,(mapslices(sum, countmatrix, dims=1) .> 500.0)[:]];
 ```
 
 ```julia; out_width="15cm"; eval=true
-#countmatrix = CSV.read("C:/Users/treppner/Dropbox/PhD/scRNA-seq/PBMC/PBMC_HVG.csv");
-#countmatrix = Array{Float64,2}(Array{Float64,2}(countmatrix[:,2:end])');
-
 # Sample pilot dataset
 Random.seed!(111);
 cells = 1000;
@@ -68,8 +63,8 @@ pilot_data = countmatrix[random_cells,:];
 Set up train and test set.
 ```julia; out_width="15cm"; eval=true
 Random.seed!(101);
-data, datatest = BMs.splitdata(pilot_data, 0.3);
-datadict = BMs.DataDict("Training data" => data, "Test data" => datatest);
+data, datatest = splitdata(pilot_data, 0.3);
+datadict = DataDict("Training data" => data, "Test data" => datatest);
 ```
 
 Set initial parameters.
@@ -86,43 +81,46 @@ regularization = 220.0;                                              # Set regul
 
 Train scDBM.
 ```julia; out_width="15cm"; eval=true
-monitor = BMs.Monitor(); monitor1 = BMs.Monitor(); monitor2 = BMs.Monitor();
+monitor = Monitor(); monitor1 = Monitor(); monitor2 = Monitor();
 Random.seed!(59);
-dbm = BMs.fitdbm(data, epochs = 200, learningrate = 0.0001, batchsizepretraining = 32, 
+dbm = fitdbm(data, epochs = 200, learningrate = 0.0001, batchsizepretraining = 32,
       monitoringdatapretraining = datadict,
       pretraining = [
             # Negative-Binomial RBM
-            BMs.TrainLayer(nhidden = 12,
+            TrainLayer(nhidden = 12,
             learningrates = lr, 
             epochs = epochs,
-            rbmtype = BMs.NegativeBinomialBernoulliRBM, 
+            rbmtype = NegativeBinomialBernoulliRBM, 
             inversedispersion = init_disp,
             fisherscoring = 1,
             lambda = regularization,
-               monitoring = (rbm, epoch, datadict) -> begin if epoch % 20 == 0 BMs.monitorreconstructionerror!(monitor1, rbm, epoch, datadict) end end);
+               monitoring = (rbm, epoch, datadict) -> begin if epoch % 20 == 0 monitorreconstructionerror!(monitor1, rbm, epoch, datadict) end end);
             # Bernoulli RBM
-            BMs.TrainLayer(nhidden = 4, 
+            TrainLayer(nhidden = 4, 
             learningrate = 0.0001,
             epochs = 500,
-               monitoring = (rbm, epoch, datadict) -> begin if epoch % 20 == 0 BMs.monitorreconstructionerror!(monitor2, rbm, epoch, datadict) end end)
+               monitoring = (rbm, epoch, datadict) -> begin if epoch % 20 == 0 monitorreconstructionerror!(monitor2, rbm, epoch, datadict) end end)
             ];
 monitoring = (dbm, epoch) -> begin 
                               if epoch % 5 == 0 
-                                 BMs.monitorlogproblowerbound!(monitor, dbm, epoch, datadict)
+                                 monitorlogproblowerbound!(monitor, dbm, epoch, datadict)
                               end
                            end);
 hstack(
-   BoltzmannMachinesPlots.plotevaluation(monitor1, BMs.monitorreconstructionerror),
-   BoltzmannMachinesPlots.plotevaluation(monitor2, BMs.monitorreconstructionerror),
-   BoltzmannMachinesPlots.plotevaluation(monitor, BMs.monitorlogproblowerbound)
-)   
+   plotevaluation(monitor1, monitorreconstructionerror),
+   plotevaluation(monitor2, monitorreconstructionerror),
+   plotevaluation(monitor, monitorlogproblowerbound)
+)
+
+# Save trained scDBM
+serialize("C:/Users/treppner/Dropbox/PhD/scDBM.jl/reproducable_example/scDBM", dbm);
 ```
 
 Generate synthetic samples.
 ```julia; out_width="15cm"; eval=true
 number_gensamples = size(pilot_data,1);
-synthetic_cells = BMs.initparticles(dbm, number_gensamples);
-BMs.gibbssamplenegativebinomial!(pilot_data,synthetic_cells, dbm, 30);
+synthetic_cells = initparticles(dbm, number_gensamples);
+gibbssamplenegativebinomial!(pilot_data,synthetic_cells, dbm, 30);
 ```
 
 # Plotting gene distributions    
@@ -155,7 +153,8 @@ p1 = Gadfly.plot(plot_data, ygroup="model", x="variable", y="log_value",
    Guide.xlabel(""),
    Guide.ylabel(""),
    Theme(major_label_font_size=25pt, minor_label_font_size=20pt)
-)
+);
+p1
 ```
 
 # Dimensionality reduction, clustering, and Davies-Bouldin index  
@@ -178,19 +177,12 @@ pca_scDBM_data = fit(PCA, synthetic_cells[1]; maxoutdim=10);
 pca_scDBM_plot = DataFrame(hcat(pca_scDBM_data.proj[:,1],pca_scDBM_data.proj[:,2], string.(scDBM_labels)));
 names!(pca_scDBM_plot, Symbol.(x));
 
-orig_dbindex = BMs.DBindex(pilot_data, orig_labels)
-dbm_dbindex = BMs.DBindex(synthetic_cells[1], scDBM_labels)
-```
-# Plotting results  
+orig_dbindex = DBindex(pilot_data, orig_labels);
+dbm_dbindex = DBindex(synthetic_cells[1], scDBM_labels);
 
-```julia; out_width="15cm"; eval=true
-plot_data = vcat(hcat(pca_original_plot,repeat(["Original"], size(pca_original_plot,1))),hcat(pca_scDBM_plot, repeat(["scDBM"], size(pca_scDBM_plot,1))));
-rename!(plot_data, :x1 => :model);
-
-p2 = Gadfly.plot(plot_data, xgroup = "model", x = "PC 1", y = "PC 2", color=:Cluster,
-   Guide.title("PCA Plot"),
-   Geom.subplot_grid(layer(Geom.point)),
-   Guide.xlabel("PC 1"),
-   Guide.ylabel("PC 2"),
-   Theme(major_label_font_size=25pt, minor_label_font_size=20pt))
+println("Pilot data DBI = ", round(orig_dbindex; digits=4), "\n",  
+         "scDBM data DBI = ", round(dbm_dbindex; digits=4))
 ```
+
+
+
