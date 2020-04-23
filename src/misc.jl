@@ -321,11 +321,11 @@ end
 
 # Number of parameters for Negative Binomial DBM
 
-function nparams(dbm::Array{BoltzmannMachines.AbstractXBernoulliRBM,1})
+function nparams(dbm::Array{AbstractXBernoulliRBM,1})
 
    params = zeros()
    for i in 1:size(dbm,1)
-      if  typeof(dbm[i]) == BoltzmannMachines.NegativeBinomialBernoulliRBM
+      if  typeof(dbm[i]) == NegativeBinomialBernoulliRBM
          tmp = (size(dbm[i].weights,1) * size(dbm[i].weights,2)) + size(dbm[i].visbias,1) + size(dbm[i].hidbias,1) + size(dbm[i].inversedispersion,1)
          params .+= tmp
       else

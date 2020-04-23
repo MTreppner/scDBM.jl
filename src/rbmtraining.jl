@@ -1054,12 +1054,12 @@ function trainpartdbm(mat;partitions::Array{Array{Int64,1},1}=[collect(1:size(ma
                       nparticles::Int64=100,
                       learningrate::Float64=0.005)
 
-    partDBMS = Vector{BoltzmannMachines.BasicDBM}()
+    partDBMS = Vector{BasicDBM}()
     nhiddensmat = partitionhiddens(partitions,nhiddens)
     println(nhiddensmat)
      for i=1:length(partitions)
         partx = mat[:,partitions[i]]
-        pdbm = BoltzmannMachines.fitdbm(partx,
+        pdbm = fitdbm(partx,
                                         nhiddens=nhiddensmat[i,:],
                                         epochs =epochs,
                                         nparticles=nparticles,
@@ -1067,7 +1067,7 @@ function trainpartdbm(mat;partitions::Array{Array{Int64,1},1}=[collect(1:size(ma
                                         )
         push!(partDBMS,pdbm)
     end
-    jointdbm = BoltzmannMachines.joindbms(partDBMS,partitions)
+    jointdbm = joindbms(partDBMS,partitions)
     jointdbm,partDBMS
 end
 

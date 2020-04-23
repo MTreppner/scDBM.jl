@@ -78,4 +78,4 @@ include("misc.jl")
 include("NegativeBinomialRBMPlots.jl")
 
 
-end # of module BoltzmannMachines
+end # of module scDBM
