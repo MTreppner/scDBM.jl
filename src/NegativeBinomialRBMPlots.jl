@@ -24,7 +24,7 @@ function counthistograms(x::Array{Float64,2}, particles::Array{Array{Float64,2},
 
    rename!(data, :x1 => :Setting, :value => :ExpressionCount)
 
-   p1 = Gadfly.plot(data,   x = "ExpressionCount", 
+   p1 =  plot(data,   x = "ExpressionCount", 
          xgroup="Setting", 
          Geom.subplot_grid(Geom.histogram,Coord.cartesian(xmin=0.0, ymin=0.0)), 
          Guide.title("Histogram of Expression Counts for n=$ncells Highly Expressed Cells"),
@@ -59,7 +59,7 @@ function cellwise_meanvarianceplot(x::Array{Float64,2}, particles::Array{Float64
    rename!(data, :x1 => :Setting, :x2 => :log_Mean , :x3 => :log_Var)
 
    abline = Geom.abline(color="red", style=:dash)
-   p2 = Gadfly.plot(data, xgroup="Setting", x = "log_Mean", y = "log_Var", 
+   p2 = plot(data, xgroup="Setting", x = "log_Mean", y = "log_Var", 
       Guide.title("Cell-Wise Mean-Variance Plot"), 
       Geom.subplot_grid(layer(Geom.point), layer(intercept=[0.0], slope=[1.0], abline)),
       Guide.xlabel("log(Mean)"),
@@ -94,7 +94,7 @@ function scvi_cellwise_meanvarianceplot(x::Array{Float64,2}, particles::Array{Fl
    rename!(data, :x1 => :Setting, :x2 => :log_Mean , :x3 => :log_Var)
 
    abline = Geom.abline(color="red", style=:dash)
-   p2 = Gadfly.plot(data, xgroup="Setting", x = "log_Mean", y = "log_Var", 
+   p2 = plot(data, xgroup="Setting", x = "log_Mean", y = "log_Var", 
       Guide.title("Cell-Wise Mean-Variance Plot"), 
       Geom.subplot_grid(layer(Geom.point), layer(intercept=[0.0], slope=[1.0], abline)),
       Guide.xlabel("log(Mean)"),
@@ -138,7 +138,7 @@ function compare_cellwise_meanvarianceplot(x::Array{Float64,2}, dbmgen::Array{Fl
    rename!(data, :x1 => :Setting, :x2 => :log_Mean , :x3 => :log_Var)
 
    abline = Geom.abline(color="red", style=:dash)
-   p2 = Gadfly.plot(data, xgroup="Setting", x = "log_Mean", y = "log_Var", 
+   p2 = plot(data, xgroup="Setting", x = "log_Mean", y = "log_Var", 
       Guide.title("Cell-Wise Mean-Variance Plot"), 
       Geom.subplot_grid(layer(Geom.point), layer(intercept=[0.0], slope=[1.0], abline)),
       Guide.xlabel("log(Mean)"),
@@ -174,7 +174,7 @@ function genewise_meanvarianceplot(x::Array{Float64,2}, particles::Array{Float64
 
    ticks = [0, 0.5, 1, 2]
    abline = Geom.abline(color="red", style=:dash)
-   p2 = Gadfly.plot(data, xgroup="Setting", x = "log_Mean", y = "log_Var", 
+   p2 = plot(data, xgroup="Setting", x = "log_Mean", y = "log_Var", 
       Guide.title("Gene-Wise Mean-Variance Plot"),
       Geom.subplot_grid(layer(Geom.point), layer(intercept=[0.0], slope=[1.0], abline)),
       Guide.xlabel("log10(Mean)"),
@@ -210,7 +210,7 @@ function scvi_genewise_meanvarianceplot(x::Array{Float64,2}, particles::Array{Fl
 
    ticks = [0, 0.5, 1, 2]
    abline = Geom.abline(color="red", style=:dash)
-   p2 = Gadfly.plot(data, xgroup="Setting", x = "log_Mean", y = "log_Var", 
+   p2 = plot(data, xgroup="Setting", x = "log_Mean", y = "log_Var", 
       Guide.title("Gene-Wise Mean-Variance Plot"),
       Geom.subplot_grid(layer(Geom.point), layer(intercept=[0.0], slope=[1.0], abline)),
       Guide.xlabel("log10(Mean)"),
@@ -255,7 +255,7 @@ function compare_genewise_meanvarianceplot(x::Array{Float64,2}, dbmgen::Array{Fl
 
    ticks = [0, 0.5, 1, 2]
    abline = Geom.abline(color="red", style=:dash)
-   p2 = Gadfly.plot(data, xgroup="Setting", x = "log_Mean", y = "log_Var", 
+   p2 = plot(data, xgroup="Setting", x = "log_Mean", y = "log_Var", 
       Guide.title("Gene-Wise Mean-Variance Plot"),
       Geom.subplot_grid(layer(Geom.point), layer(intercept=[0.0], slope=[1.0], abline)),
       Guide.xlabel("log10(Mean)"),
@@ -277,7 +277,7 @@ function compare_tsne(tsne_original::Array{Float64,2}, tsne_dbm::Array{Float64,2
    rename!(data, :x1 => :Setting, :x2 => :TSNE1 , :x3 => :TSNE2)
 
    abline = Geom.abline(color="red", style=:dash)
-   p2 = Gadfly.plot(data, xgroup="Setting", x = "TSNE1", y = "TSNE2", 
+   p2 = plot(data, xgroup="Setting", x = "TSNE1", y = "TSNE2", 
       Guide.title("t-SNE Plot"),
       Geom.subplot_grid(layer(Geom.point)),
       Guide.xlabel("t-SNE 1"),
@@ -299,7 +299,7 @@ function compare_pca(pca_original::Array{Float64,2}, pca_dbm::Array{Float64,2}, 
    rename!(data, :x1 => :Setting, :x2 => :PC1 , :x3 => :PC2)
 
    abline = Geom.abline(color="red", style=:dash)
-   p2 = Gadfly.plot(data, xgroup="Setting", x = "PC1", y = "PC2", 
+   p2 = plot(data, xgroup="Setting", x = "PC1", y = "PC2", 
       Guide.title("Principal Component Analysis"),
       Geom.subplot_grid(layer(Geom.point)),
       Guide.xlabel("PC 1"),
@@ -320,7 +320,7 @@ function meandispersionplot(x::Array{Float64,2}, rbm::BMs.NegativeBinomialBernou
    data = DataFrame(hcat(dispersion,mean_normalizedcounts))
    rename!(data, :x1 => :Dispersion, :x2 => :MeanNormalizedCounts)
 
-   p = Gadfly.plot(data, x = "MeanNormalizedCounts", y = "Dispersion", Geom.point,
+   p = plot(data, x = "MeanNormalizedCounts", y = "Dispersion", Geom.point,
       Guide.title("Mean-Dispersion Plot"), 
       Guide.xlabel("Mean Normalized Counts"),
       Guide.ylabel("Dispersion Estimate"),
@@ -332,14 +332,14 @@ function genewise_violinplot(x::Array{Float64,2}, particles::Array{Array{Float64
    violinplot = DataFrame(hcat(x[:,gene],particles[1][:,gene]));
    rename!(violinplot, :x1 => :Ground_Truth, :x2 => :Generated_Data);
    violinplot = melt(violinplot);
-   p_violin = Gadfly.plot(violinplot, x="variable", y="value", Geom.histogram)
+   p_violin = plot(violinplot, x="variable", y="value", Geom.histogram)
 end
 
 function cellwise_violinplot(x::Array{Float64,2}, particles::Array{Float64,2},cell::Int)
    violinplot = DataFrame(hcat(x[cell,:],particles[cell,:]));
    rename!(violinplot, :x1 => :Ground_Truth, :x2 => :Generated_Data);
    violinplot = melt(violinplot);
-   p_violin = Gadfly.plot(violinplot, x="variable", y="value", Geom.violin)
+   p_violin = plot(violinplot, x="variable", y="value", Geom.violin)
 end
 
 function genewise_varplot(x::Array{Float64,2}, particles::Array{Array{Float64,2},1})
@@ -356,7 +356,7 @@ function genewise_varplot(x::Array{Float64,2}, particles::Array{Array{Float64,2}
    rename!(data, :x1 => :Setting, :x1_1 => :log_Var)
 
    abline = Geom.abline(color="red", style=:dash)
-   p2 = Gadfly.plot(data, xgroup="Setting", x = "log_Var",
+   p2 = plot(data, xgroup="Setting", x = "log_Var",
       Guide.title("Gene-Wise Variance Plot"), 
       Geom.subplot_grid(layer(Geom.point), layer(intercept=[0.0], slope=[1.0], abline)),
       Guide.xlabel("log(Mean)"),
@@ -412,7 +412,7 @@ function zeroinflationplot_compare(x::Array{Float64,2}, particles::Array{Array{F
    data_final = hcat(tmp_final,data_final)
    rename!(data_final, :x1 => :Dataset)
 
-   p2 = Gadfly.plot(data_final, x = "Means", y = "Zeroproportions", 
+   p2 = plot(data_final, x = "Means", y = "Zeroproportions", 
       color = "Dataset", Geom.point, Stat.smooth(smoothing=0.75),
       Guide.title("Mean-Zero Relationship"), 
       Guide.xlabel("log(Mean)"),
@@ -451,7 +451,7 @@ function zeroinflationplot(x::Array{Float64,2}, particles::Array{Float64,2})
    data_final = hcat(tmp_final,data_final)
    rename!(data_final, :x1 => :Dataset)
 
-   p2 = Gadfly.plot(data_final, x = "Means", y = "Zeroproportions", 
+   p2 = plot(data_final, x = "Means", y = "Zeroproportions", 
       color = "Dataset", Geom.point, 
       Guide.title("Mean-Zero Relationship"), 
       Guide.xlabel("log10(Mean)"),
@@ -487,7 +487,7 @@ function scvi_zeroinflationplot(x::Array{Float64,2}, particles::Array{Float64,2}
    data_final = hcat(tmp_final,data_final)
    rename!(data_final, :x1 => :Dataset)
 
-   p2 = Gadfly.plot(data_final, x = "Means", y = "Zeroproportions", 
+   p2 = plot(data_final, x = "Means", y = "Zeroproportions", 
       color = "Dataset", Geom.point, 
       Guide.title("Mean-Zero Relationship"), 
       Guide.xlabel("log10(Mean)"),
@@ -507,7 +507,7 @@ function zerospergene(x::Array{Float64,2}, particles::Array{Array{Float64,2},1})
 
    tmp = DataFrames.melt(combined_zeroproportion)
 
-   p = Gadfly.plot(tmp, x="variable", y="value" , Geom.boxplot,
+   p = plot(tmp, x="variable", y="value" , Geom.boxplot,
          Guide.title("Distribution of Zeros per Gene"),
          Guide.xlabel(""),
          Guide.ylabel("Proportion of Zeros per Gene"))
@@ -547,7 +547,7 @@ function compare_umap(umap_original::DataFrame, umap_dbm::DataFrame, umap_scvi::
    names!(plotting_data, Symbol.(x))
 
    # Plot
-   p = Gadfly.plot(plotting_data, xgroup="Groups", x="UMAP 1", y="UMAP 2", color="Cluster", Scale.color_discrete_manual(palette..., levels=["1","2","3","4","5"]), 
+   p = plot(plotting_data, xgroup="Groups", x="UMAP 1", y="UMAP 2", color="Cluster", Scale.color_discrete_manual(palette..., levels=["1","2","3","4","5"]), 
       Geom.subplot_grid(Geom.point), Guide.title(""), Guide.xlabel("UMAP 1")
    )
 
