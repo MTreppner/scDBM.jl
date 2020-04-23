@@ -105,12 +105,14 @@ function plotestimatedprob(monitor::Monitor, evaluationkey::String;
             Geom.line, Geom.ribbon,
             Guide.xlabel("Epoch"), Guide.ylabel("Value"),
             Guide.colorkey(title = "Data set"),
-            Guide.title(title))
+            Guide.title(title),
+            Theme(major_label_font_size=25pt, minor_label_font_size=20pt))
    else
       plot(plotdata, x = "epoch", y = "value", color = "datasetname",
             Guide.xlabel("Epoch"), Guide.ylabel("Value"),
             Guide.colorkey(title = "Data set"),
-            Geom.line, Guide.title(title))
+            Geom.line, Guide.title(title),
+            Theme(major_label_font_size=25pt, minor_label_font_size=20pt))
    end
 end
 
