@@ -5,7 +5,6 @@ using Distributed
 using LinearAlgebra
 using Random
 using Statistics
-using Plots
 using DataFrames
 using SpecialFunctions
 using LsqFit
