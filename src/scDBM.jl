@@ -29,6 +29,7 @@ export
          Binomial2BernoulliRBM,
          GaussianBernoulliRBM,
          GaussianBernoulliRBM2,
+         NegativeBinomialBernoulliRBM,
          PartitionedRBM,
          fitrbm, freeenergy, initrbm,
          joinrbms, joindbms,
@@ -61,7 +62,7 @@ export
       monitorweightsnorm, monitorweightsnorm!,
       propagateforward,
    crossvalidation,
-   barsandstripes, logit, splitdata
+   barsandstripes, logit, splitdata, plotevaluation, crossvalidationcurve, scatterhidden
 
 include("bmtypes.jl")
 include("gibbssampling.jl")
