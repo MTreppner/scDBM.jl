@@ -45,7 +45,7 @@ export
          TrainLayer, TrainPartitionedLayer,
          addlayer!, stackrbms,
          initparticles, gibbssample!,gibbssamplenegativebinomial!,
-         meanfield, fitdbm, traindbm!,
+         meanfield, fitdbm, traindbm!,DBindex,
    Particle, Particles,
    AbstractOptimizer,
       LoglikelihoodOptimizer,
