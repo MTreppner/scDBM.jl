@@ -10,7 +10,7 @@ using DataFrames
 using SpecialFunctions
 using LsqFit
 using GLM
-using Gadfly
+#using Gadfly
 using Loess
 using Distances
 
