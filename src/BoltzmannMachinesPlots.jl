@@ -285,5 +285,3 @@ function crossvalidationcurve(monitor::Monitor,
          layer(boxplotdata, x = "epoch", y = "score", Geom.boxplot),
          Guide.xlabel("Epoch"), Guide.ylabel("Score"))
 end
-
-end # module BoltzmannMachinesPlots
