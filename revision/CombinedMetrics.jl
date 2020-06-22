@@ -29,7 +29,7 @@ for t in Iter
 end
 dbi = dbi[2:end,:]
 
-CSV.write("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/plotting/dbi_plotting.csv", dbi, writeheader = true)
+CSV.write("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/plotting/PBMC/dbi_plotting.csv", dbi, writeheader = true)
 
 # Deserialize ARI tables
 Iter = ["384", "768", "1152", "1536", "1920", "2304"]
@@ -59,4 +59,17 @@ for t in Iter
 end
 ari = ari[2:end,:]
 
-CSV.write("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/plotting/ari_plotting.csv", ari, writeheader = true)
+CSV.write("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/plotting/PBMC/ari_plotting.csv", ari, writeheader = true)
+
+# Cluster proportions
+Iter = ["384", "768", "1152", "1536", "1920", "2304"]
+for t in Iter
+   prop_scdbm = deserialize(string("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/scDBM/PBMC/cluster_prop_",t,"Cells_dbm_PBMC_Seurat"))
+   CSV.write(string("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/plotting/PBMC/prop_scdbm",t,"cells.csv"), prop_scdbm, writeheader = true)
+
+   prop_scvi_prior = deserialize(string("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/scVI_Prior/PBMC/cluster_prop_prior_",t,"Cells_dbm_Upsample_Seurat"))
+   CSV.write(string("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/plotting/PBMC/prop_scvi_prior",t,"cells.csv"), prop_scvi_prior, writeheader = true)
+
+   prop_scvi_posterior = deserialize(string("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/scVI_Posterior/PBMC/cluster_prop_posterior_",t,"Cells_dbm_Upsample_Seurat"))
+   CSV.write(string("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/plotting/PBMC/prop_scvi_posterior",t,"cells.csv"), prop_scvi_posterior, writeheader = true)
+end
