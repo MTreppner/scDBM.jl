@@ -112,7 +112,7 @@ for t in Iter
    filenames = readdir()[occursin.(string("cells",t,"_seed"), readdir())];
 
    for i = 1:size(filenames,1)
-      
+      println(i)
       if t == "384" || t == "768"
          seedset = filenames[i][19:end-4]
       else
@@ -132,7 +132,7 @@ for t in Iter
       ########## Test Seurat Clustering ##########
       orig_labels = CSV.read("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/PBMC_Seurat_Clustering.csv")
       orig_labels = Array{Int64,1}(orig_labels[:x])
-      orig_labels = orig_labels .+ 1
+      #orig_labels = orig_labels .+ 1
       
       umap_original_plot = DataFrame(hcat(umap_original[:,1],umap_original[:,2], string.(orig_labels)))
       x = ["UMAP 1", "UMAP 2", "Cluster"]
@@ -153,8 +153,8 @@ for t in Iter
       names!(umap_dbm_plot, Symbol.(x))
 
       # DBI
-      orig_dbindex = BMs.DBindex(countmatrix, orig_labels);
-      dbm_dbindex = BMs.DBindex(gen_data_dbm, genlab_dbm);
+      orig_dbindex = DBindex(countmatrix, orig_labels);
+      dbm_dbindex = DBindex(gen_data_dbm, genlab_dbm);
       combined_dbi = vec([orig_dbindex, dbm_dbindex])
 
       # ARI
@@ -244,10 +244,10 @@ cd("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/cell_samples/PBMC/");
 filenames = readdir()[occursin.(string("cells",t,"_seed"), readdir())];
 tmp = filenames[i];
 py"""
-countmatrix = CsvDataset(str($tmp), save_path = save_path, new_n_genes = 500)
+countmatrix = CsvDataset(str($tmp), save_path = save_path, new_n_genes = 1000)
 """
 
-countmatrix = py"CsvDataset(str($tmp), save_path = save_path, new_n_genes = 500)"
+countmatrix = py"CsvDataset(str($tmp), save_path = save_path, new_n_genes = 1000)"
 
 # Read train/test split indices
 filenames_train = readdir()[occursin.(string("cells",t,"_train"), readdir())];
@@ -331,7 +331,7 @@ countmatrix = Array{Float64,2}(Array{Float64,2}(countmatrix[:,2:end])')
 
 orig_labels = CSV.read("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/PBMC_Seurat_Clustering.csv")
 orig_labels = Array{Int64,1}(orig_labels[:x])
-orig_labels = orig_labels .+ 1
+#orig_labels = orig_labels .+ 1
 
 umap_original_plot = DataFrame(hcat(umap_original[:,1],umap_original[:,2], string.(orig_labels)));
 x = ["UMAP 1", "UMAP 2", "Cluster"];
@@ -443,10 +443,10 @@ cd("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/cell_samples/PBMC/");
 filenames = readdir()[occursin.(string("cells",t,"_seed"), readdir())];
 tmp = filenames[i];
 py"""
-countmatrix = CsvDataset(str($tmp), save_path = save_path, new_n_genes = 500)
+countmatrix = CsvDataset(str($tmp), save_path = save_path, new_n_genes = 1000)
 """
 
-countmatrix = py"CsvDataset(str($tmp), save_path = save_path, new_n_genes = 500)"
+countmatrix = py"CsvDataset(str($tmp), save_path = save_path, new_n_genes = 1000)"
 
 # Read train/test split indices
 filenames_train = readdir()[occursin.(string("cells",t,"_train"), readdir())];
@@ -523,7 +523,7 @@ countmatrix = CSV.read("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/PBMC_HVG
 countmatrix = Array{Float64,2}(Array{Float64,2}(countmatrix[:,2:end])');
 
 # Generate Data
-gen_data_scvi = py"full.generate(batch_size=n_cells, n_samples=10, sample_prior=False, n_cells=n_cells)";
+gen_data_scvi = py"full.generate(batch_size=n_cells, n_samples=12, sample_prior=False, n_cells=n_cells)";
 n_paste = collect(1:trunc(Int,size(countmatrix,1)/n_subset))
 global gen_data_scvi_posterior = gen_data_scvi[1][:,:,1]
 for i in 2:size(n_paste,1)
@@ -538,7 +538,7 @@ maplab(x1,x2,y) = map(arg -> y[findmin(sum((x1 .- x2[arg:arg,:]).^2,dims=2))[2][
 # Original data
 orig_labels = CSV.read("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/PBMC_Seurat_Clustering.csv")
 orig_labels = Array{Int64,1}(orig_labels[:x])
-orig_labels = orig_labels .+ 1
+#orig_labels = orig_labels .+ 1
 
 umap_original_plot = DataFrame(hcat(umap_original[:,1],umap_original[:,2], string.(orig_labels)));
 x = ["UMAP 1", "UMAP 2", "Cluster"];
@@ -558,8 +558,8 @@ umap_scvi_plot = DataFrame(hcat(umap_scvi[:,1],umap_scvi[:,2], string.(genlab_sc
 names!(umap_scvi_plot, Symbol.(x));
 
 # DBI
-orig_dbindex = BMs.DBindex(countmatrix, orig_labels);
-scvi_dbindex = BMs.DBindex(gen_data_scvi_posterior, genlab_scvi);
+orig_dbindex = DBindex(countmatrix, orig_labels);
+scvi_dbindex = DBindex(gen_data_scvi_posterior, genlab_scvi);
 combined_dbi = vec([orig_dbindex, scvi_dbindex]);
 
 # ARI
