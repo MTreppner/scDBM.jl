@@ -20,7 +20,6 @@ for t in Iter
 
    # scVI Posterior
    dbi_scvi_posterior = deserialize(string("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/scVI_Posterior/PBMC/pbmc_dbi_",t,"cells_scvi_posterior_Seurat"));
-   dbi_scvi_posterior = stack(dbi_scvi_posterior)
    tmp = repeat([string(t," Cells")], size(dbi_scvi_posterior,1)); 
    dbi_scvi_posterior = hcat(dbi_scvi_posterior, tmp);
    rename!(dbi_scvi_posterior, :x1 => :cells);
@@ -34,28 +33,30 @@ CSV.write("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/plotting/PBMC/dbi_plo
 # Deserialize ARI tables
 Iter = ["384", "768", "1152", "1536", "1920", "2304"]
 ari = DataFrame(Array{Float64,2}(undef, 1, 3))
-rename!(ari, :x1 => :variable, :x2 => :value, :x3 => :cells);
+rename!(ari, :x1 => :ARI, :x2 => :cells, :x3 => :variable);
 for t in Iter
    # scDBM
    ari_scdbm = deserialize(string("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/scDBM/PBMC/ari_",t,"cells_dbm_PBMC_Seurat"));
-   tmp = repeat([string(t," Cells")], size(ari_scdbm,1)); 
-   ari_scdbm = hcat(ari_scdbm, tmp);
-   rename!(ari_scdbm, :x1 => :cells);
+   tmp = repeat([string(t," Cells")], size(ari_scdbm,1));
+   tmp1 = repeat(["scDBM"], size(ari_scdbm,1));
+   ari_scdbm = hcat(ari_scdbm, tmp, tmp1, makeunique=true);
+   rename!(ari_scdbm, :x1 => :cells, :x1_1 => :variable);
 
    # scVI Prior
    ari_scvi_prior = deserialize(string("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/scVI_Prior/PBMC/pbmc_ari_",t,"cells_scvi_prior_Seurat"));
    tmp = repeat([string(t," Cells")], size(ari_scvi_prior,1)); 
-   ari_scvi_prior = hcat(ari_scvi_prior, tmp);
-   rename!(ari_scvi_prior, :x1 => :cells);
+   tmp1 = repeat(["scVI Prior"], size(ari_scvi_prior,1));
+   ari_scvi_prior = hcat(ari_scvi_prior, tmp, tmp1, makeunique=true);
+   rename!(ari_scvi_prior, :x1 => :cells, :x1_1 => :variable);
 
    # scVI Posterior
-   ari_scvi_posterior = deserialize(string("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/scVI_Posterior/PBMC/pbmc_ari_",t,"cells_scvi_posterior_Seurat"));
-   ari_scvi_posterior = stack(ari_scvi_posterior)
+   ari_scvi_posterior = deserialize(string("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/scVI_Posterior/PBMC/pbmc_ari_",t,"cells_scvi_prior_Seurat"));
    tmp = repeat([string(t," Cells")], size(ari_scvi_posterior,1)); 
-   ari_scvi_posterior = hcat(ari_scvi_posterior, tmp);
-   rename!(ari_scvi_posterior, :x1 => :cells);
+   tmp1 = repeat(["scVI Posterior"], size(ari_scvi_posterior,1));
+   ari_scvi_posterior = hcat(ari_scvi_posterior, tmp, tmp1, makeunique=true);
+   rename!(ari_scvi_posterior, :x1 => :cells, :x1_1 => :variable);
 
-   global dbi = vcat(dbi, ari_scdbm, ari_scvi_prior, ari_scvi_posterior)
+   global ari = vcat(ari, ari_scdbm, ari_scvi_prior, ari_scvi_posterior)
 end
 ari = ari[2:end,:]
 
@@ -73,3 +74,24 @@ for t in Iter
    prop_scvi_posterior = deserialize(string("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/scVI_Posterior/PBMC/cluster_prop_posterior_",t,"Cells_dbm_Upsample_Seurat"))
    CSV.write(string("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/plotting/PBMC/prop_scvi_posterior",t,"cells.csv"), prop_scvi_posterior, writeheader = true)
 end
+
+# Gene distributions
+trainingresult = deserialize("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/scDBM/PBMC/scDBM_384Cells_PBMC")
+
+cd("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/scDBM/PBMC/")
+filenames = readdir()[occursin.(r"cells384_seed", readdir())];
+countmatrix = CSV.read(string("C:/Users/treppner/Dropbox/PhD/scDBM.jl/revision/scDBM/PBMC/",filenames[19]))
+countmatrix = Array{Float64,2}(Array{Float64,2}(countmatrix[:,2:end])')
+
+seedset = filenames[19][19:end-4]
+for j = 1:30
+   if string(trainingresult[j][12]) == seedset
+      global dbm = trainingresult[j][9]
+   end
+end
+ngensamples = 4182;
+particles = BMs.initparticles(dbm, ngensamples);
+BMs.gibbssamplenegativebinomial!(countmatrix,particles, dbm, 100; zeroinflation=false)
+gen_data_dbm = DataFrame(particles[1])
+
+CSV.write("C:/Users/treppner/Dropbox/PhD/scRNA-seq/AdrianData/scRNAseq_data_all/cor_plotting_4182dbm_PBMC.csv", gen_data_dbm, writeheader = true)
