@@ -1,5 +1,5 @@
 # scDBM.jl  
-This is the implementation for **"Making many out of few: deep generative models forsingle-cell RNA-sequencing data"**.
+This is the implementation for **"Making many out of few: deep generative models for single-cell RNA-sequencing data"**.
 
 ## Abstract  
 Deep generative models, such as variational autoencoders (VAEs) or deep Boltzmann machines (DBM), can generate anarbitrary number of synthetic observations after being trained on an initial set of samples. This has mainly been investigated for imaging data but could also be useful for single-cell transcriptomics (scRNA-seq). A small pilot study could be used for planning a full-scale study by investigating planned analysis strategies on synthetic data with different sample sizes. It is unclear whether synthetic observations generated based on a small scRNA-seq dataset reflect the properties relevant for subsequent data analysis steps.  
