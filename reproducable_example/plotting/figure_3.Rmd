@@ -1,0 +1,173 @@
+---
+title: "Synthetic Single-Cell RNA-Sequencing Data from Small Pilot Studies using Deep Generative Models"
+subtitle: "Figure 3"
+author:
+- affiliation: Institute of Medical Biometry and Statistics, Faculty of Medicine and
+    Medical Center - University of Freiburg
+  name: "Martin Treppner"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    fig_width: 15
+    fig_height: 8
+    theme: united
+    toc: yes
+  pdf_document:
+    toc: yes
+---
+
+# Loading required packages  
+
+```{r, warning=FALSE, message=FALSE}
+options(repos="https://CRAN.R-project.org")
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(dplyr,cowplot,ggplot2,tidyverse,gt)
+```
+
+# Functions for descriptive statistics  
+
+```{r, warning=FALSE, message=FALSE}
+# Percentage of zeros
+percantage_of_zeros <- function(x){
+  out <- length(x[which(x == 0)]) / length(x)
+  out
+}
+
+# Coefficient of variation
+coefficient_of_variation <- function(x){
+  out <- ifelse(mean(x) == 0, NA, sd(x) / mean(x))
+  out
+}
+```
+
+# Preparing data  
+
+```{r, warning=FALSE, message=FALSE}
+# Original data
+original_dat <- read.csv("/Users/martintreppner/Desktop/notebook_test/segerstolpe_hvg.csv")
+gene_names <- original_dat[,1]
+original_dat <- original_dat[,2:ncol(original_dat)] %>% t() %>% as.data.frame()
+colnames(original_dat) <- gene_names
+
+original_median <- apply(original_dat, 2, median)
+original_iqr <- apply(original_dat, 2, IQR)
+original_zeros <- apply(original_dat, 2, percantage_of_zeros)
+original_cv <- apply(original_dat, 2, coefficient_of_variation)
+
+Iter <- c("384", "1152", "1920")
+scdbm_stats_combined <- matrix(NA, nrow = 3, ncol = 4)
+scvi_stats_combined <- matrix(NA, nrow = 3, ncol = 4)
+for(i in 1:3){
+  
+  # scDBM
+  scbm_dat <- read.csv(paste("/Users/martintreppner/Desktop/notebook_test/gen_data_scdbm",Iter[i],"_seed24.csv",sep=""))
+  scdbm_median <- apply(scbm_dat, 2, median) 
+  scdbm_median_mad <- mean(abs(original_median - scdbm_median), na.rm=TRUE) %>%
+    round(2)
+  scdbm_iqr <- apply(scbm_dat, 2, IQR)
+  scdbm_iqr_mad <- mean(abs(original_iqr - scdbm_iqr), na.rm=TRUE) %>%
+    round(2)
+  scdbm_zeros <- apply(scbm_dat, 2, percantage_of_zeros)
+  scdbm_zeros_mad <- mean(abs(original_zeros - scdbm_zeros), na.rm=TRUE) %>%
+    round(2)
+  scdbm_cv <- apply(scbm_dat, 2, coefficient_of_variation)
+  scdbm_cv_mad <- mean(abs(original_cv - scdbm_cv), na.rm=TRUE) %>%
+    round(2)
+  
+  scdbm_stats_combined[i,] <- cbind(scdbm_median_mad, 
+                                    scdbm_iqr_mad, 
+                                    scdbm_zeros_mad, 
+                                    scdbm_cv_mad)
+
+  # scVI
+  scvi_dat <- read.csv(paste("/Users/martintreppner/Desktop/notebook_test/gen_data_scvi",Iter[i],"_seed44.csv",sep=""))
+  scvi_median <- apply(scvi_dat, 2, median) 
+  scvi_median_mad <- mean(abs(original_median - scvi_median), na.rm=TRUE) %>%
+    round(2)
+  scvi_iqr <- apply(scvi_dat, 2, IQR)
+  scvi_iqr_mad <- mean(abs(original_iqr - scvi_iqr), na.rm=TRUE) %>%
+    round(2)
+  scvi_zeros <- apply(scvi_dat, 2, percantage_of_zeros)
+  scvi_zeros_mad <- mean(abs(original_zeros - scvi_zeros), na.rm=TRUE) %>%
+    round(2)
+  scvi_cv <- apply(scvi_dat, 2, coefficient_of_variation)
+  scvi_cv_mad <- mean(abs(original_cv - scvi_cv), na.rm=TRUE) %>%
+    round(2)
+  
+  scvi_stats_combined[i,] <- cbind(scvi_median_mad, 
+                                   scvi_iqr_mad, 
+                                   scvi_zeros_mad, 
+                                   scvi_cv_mad)
+  
+}
+colnames(scdbm_stats_combined) <- c("Median", "IQR", "% of zeros", "CV")
+colnames(scvi_stats_combined) <- c("Median", "IQR", "% of zeros", "CV")
+
+# scDBM
+scdbm_stats_combined %>% as.data.frame() -> scdbm_stats_combined
+scdbm_stats_combined$cells <- Iter
+scdbm_stats_combined %>% 
+  pivot_longer(cols=colnames(scdbm_stats_combined[-5])) %>%
+  group_by(name) %>%
+  mutate(Rank = factor(rank(value))) -> scdbm_stats_combined
+scdbm_stats_combined$model <- "scDBM"
+
+# scVI
+scvi_stats_combined %>% as.data.frame() -> scvi_stats_combined
+scvi_stats_combined$cells <- Iter  
+scvi_stats_combined %>% 
+  pivot_longer(cols=colnames(scvi_stats_combined[-5])) %>%
+  group_by(name) %>%
+  mutate(Rank = factor(rank(value))) -> scvi_stats_combined
+scvi_stats_combined$model <- "scVI"
+
+descriptive_stats <- rbind(scdbm_stats_combined, scvi_stats_combined)
+
+descriptive_stats$cells <- factor(descriptive_stats$cells, levels = c("384","1152","1920"))
+descriptive_stats$cells <- plyr::revalue(descriptive_stats$cells, c("384" = "1 Plate", "1152" = "3 Plates", "1920" = "5 Plates"))
+```
+
+# Plot  
+
+```{r, warning=FALSE, message=FALSE}  
+p <- ungroup(descriptive_stats) %>%
+  ggplot(aes(x = cells, y = name, fill = Rank)) +
+    geom_tile(colour="white") +
+    scale_fill_viridis_d(
+    option = "D", begin = 0.95, end = 0.05,
+    guide = guide_colorbar(
+      direction = "horizontal",
+      label.position = "bottom",
+      title.position = "top",
+      ticks = FALSE,
+      barwidth = grid::unit(0.2, "in"),
+      barheight = grid::unit(3.5, "in")
+    )) +
+    scale_y_discrete(labels = c("Median" = "Median", "IQR" = "IQR",
+                                "% of zeros" = "% of zeros",
+                                "Coefficient of variation" = "CV"
+                                )) +
+    ggtitle("") +
+    guides(fill = guide_legend("Rank")) +
+    facet_grid(.~ model) +
+    theme_minimal() +
+    theme(plot.title = element_text(size = 24, hjust = 0.4),
+          axis.title = element_blank(),
+          axis.text = element_text(size = 12),
+          axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5),
+          panel.grid = element_blank(),
+          strip.text = element_text(size = 16, angle=0),
+          legend.title = element_text(size = 14),
+          legend.text = element_text(size = 12),
+          legend.key.size = unit(20, "points"),
+          legend.position = "right") +
+          geom_text(aes(label = value), col = "white") 
+p
+```
+
+# Session info  
+
+```{r}
+sessionInfo()
+```
+
