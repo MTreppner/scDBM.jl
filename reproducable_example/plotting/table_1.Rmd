@@ -1,0 +1,68 @@
+---
+title: "Synthetic Single-Cell RNA-Sequencing Data from Small Pilot Studies using Deep Generative Models"
+subtitle: "Table 1"
+author:
+- affiliation: Institute of Medical Biometry and Statistics, Faculty of Medicine and
+    Medical Center - University of Freiburg
+  name: "Martin Treppner"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    fig_width: 15
+    fig_height: 8
+    theme: united
+    toc: yes
+  pdf_document:
+    toc: yes
+---
+
+# Loading required packages  
+
+```{r, warning=FALSE, message=FALSE}
+options(repos="https://CRAN.R-project.org")
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(dplyr,cowplot,ggplot2,tidyverse,gt)
+```
+
+# Table for cluster porportions  
+
+```{r, warning=FALSE, message=FALSE}
+cluster_prop_data <- read.csv("/Users/martintreppner/Desktop/notebook_test/cluster_prop_plotting.csv") %>%
+  mutate(Difference = Original - proportion) %>%
+  group_by(model, cells) %>%
+  summarise(abs_diff = round(sum(abs(Difference))/5)) -> group_diffs
+
+order_cells <- c("384", "1152", "1920")
+group_diffs$cells <- factor(group_diffs$cells, levels = order_cells)
+levels(group_diffs$cells) <- c("1 Plate", "2 Plates", "3 Plates")
+
+group_diffs %>% pivot_wider(names_from = cells, values_from = abs_diff) -> group_diffs
+colnames(group_diffs) <- c("Model","1 Plate", "2 Plates", "3 Plates")
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+tab_1 <- group_diffs %>% 
+  gt(groupname_col = "dataset",
+     rowname_col = "Name") %>%
+  tab_header(
+    title = "Mean of absolute differences in the number of cells per cluster",
+  ) %>%
+  tab_spanner(
+    label = "Number of plates",
+    columns = vars("1 Plate",  "2 Plates", "3 Plates")
+  ) %>%
+  tab_source_note(
+    source_note = md("n = 30 iterations for each model and each sample size.")
+  ) %>%
+  cols_align(align = "center") %>%
+  tab_options(table.font.size = 20)
+tab_1
+```
+
+# Session info  
+
+```{r}
+sessionInfo()
+```
+

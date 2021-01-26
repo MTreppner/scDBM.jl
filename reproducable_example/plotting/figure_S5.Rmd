@@ -1,0 +1,115 @@
+---
+title: "Synthetic Single-Cell RNA-Sequencing Data from Small Pilot Studies using Deep Generative Models"
+subtitle: "Figure S5"
+author:
+- name: Martin Treppner
+  affiliation: Institute of Medical Biometry and Statistics, Faculty of Medicine and Medical Center - University of Freiburg
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+vignette: >
+output:
+  BiocStyle::html_document:
+    number_sections: yes
+    toc: true
+    toc_depth: 2
+    bibliography: bibliography.bib
+---
+
+# Loading required packages  
+
+```{r, warning=FALSE, message=FALSE}
+options(repos="https://CRAN.R-project.org")
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(dplyr,cowplot,ggplot2)
+```
+
+```{r, warning=FALSE, message=FALSE}
+# Original
+original_dat <- read.csv("/Users/martintreppner/Desktop/notebook_test/segerstolpe_hvg.csv")
+original_dat <- original_dat[,2:ncol(original_dat)] %>% t() %>% as.data.frame()
+
+original_dat_zeros <- read.csv("/Users/martintreppner/Desktop/notebook_test/segerstolpe_hvg_zeros.csv", header = TRUE)
+original_dat_zeros <- original_dat_zeros[,2:ncol(original_dat_zeros)] %>% t() %>% as.data.frame()
+
+# scDBM
+scdbm_dat <- read.csv("/Users/martintreppner/Desktop/notebook_test/imputatuion_scdbm.csv", header = TRUE)
+scdbm_zeros <- read.csv("/Users/martintreppner/Desktop/notebook_test/imputatuion_scdbm_zeros.csv", header = TRUE)
+
+# scVI
+scvi_prior_dat <- read.csv("/Users/martintreppner/Desktop/notebook_test/imputatuion_scvi.csv", header = TRUE)
+scvi_prior_zeros <- read.csv("/Users/martintreppner/Desktop/notebook_test/imputatuion_scvi_zeros.csv", header = TRUE)
+```
+
+```{r, warning=FALSE, message=FALSE}
+# Percentage of zeros
+percantage_of_zeros <- function(x){
+  out <- length(x[which(x == 0)]) / length(x)
+  out
+}
+
+# Original
+original_dat_zerocounts <- apply(original_dat, 2, percantage_of_zeros) %>% as.data.frame() 
+original_dat_zeros_zerocounts <- apply(original_dat_zeros, 2, percantage_of_zeros) %>% as.data.frame() 
+
+# scDBM
+scdbm_dat_zerocounts <- apply(scdbm_dat, 2, percantage_of_zeros) %>% as.data.frame() 
+scdbm_zeros_zerocounts <- apply(scdbm_zeros, 2, percantage_of_zeros) %>% as.data.frame() 
+
+# scVI
+scvi_dat_zerocounts <- apply(scvi_dat, 2, percantage_of_zeros) %>% as.data.frame() 
+scvi_zeros_zerocounts <- apply(scvi_zeros, 2, percantage_of_zeros) %>% as.data.frame() 
+```
+
+```{r, warning=FALSE, message=FALSE}
+# Original
+original_dat_zerocounts$model <- "Original"
+original_dat_zerocounts$type <- "Original"
+original_dat_zeros_zerocounts$model <- "Added zeros"
+original_dat_zeros_zerocounts$type <- "Original"
+
+# scDBM
+scdbm_dat_zerocounts$model <- "Original"
+scdbm_dat_zerocounts$type <- "scDBM"
+scdbm_zeros_zerocounts$model <- "Added zeros"
+scdbm_zeros_zerocounts$type <- "scDBM"
+
+# scVI
+scvi_dat_zerocounts$model <- "Original"
+scvi_dat_zerocounts$type <- "scVI"
+scvi_zeros_zerocounts$model <- "Added zeros"
+scvi_zeros_zerocounts$type <- "scVI"
+```
+
+```{r, warning=FALSE, message=FALSE}
+combined_zeros <- rbind(original_dat_zerocounts, 
+      original_dat_zeros_zerocounts, 
+      scdbm_dat_zerocounts, 
+      scdbm_zeros_zerocounts, 
+      scvi_prior_dat_zerocounts, 
+      scvi_prior_zeros_zerocounts,
+      scvi_posterior_dat_zerocounts,
+      scvi_posterior_zeros_zerocounts)
+colnames(combined_zeros) <- c("value", "model", "type")
+combined_zeros$model <- factor(combined_zeros$model, levels = c("Original","Added zeros"))
+combined_zeros$type <- factor(combined_zeros$type, levels = c("Original", "scDBM", "scVI Prior",  "scVI Posterior"))
+```
+
+```{r, warning=FALSE, message=FALSE}
+p_zeros <- ggplot(combined_zeros, aes(x=factor(model, levels = c("Original","Added zeros")), y=value, fill=factor(type, levels = c("Original", "scDBM", "scVI Prior",  "scVI Posterior")))) +
+      theme_minimal_grid(font_size = 25) +
+      geom_boxplot(size = 0.4,outlier.shape = NA) +
+      scale_fill_manual(values=c("#E69F00","#0072B2","#009E73", "#5B3794"), labels = c("scDBM \n original", "scDBM \n with zeros", "scVI Prior original", "scVI Prior with zeros",  "scVI Posterior original",  "scVI Posterior with zeros")) +
+      theme(legend.title=element_blank(), legend.position = "none", legend.justification = "center") +
+      labs(y = expression(paste("Proportion on zeros per gene")), x = "") +
+      facet_grid(.~ type)
+p_zeros
+```
+
+# Session info  
+
+```{r}
+sessionInfo()
+```
+
+
+
+
